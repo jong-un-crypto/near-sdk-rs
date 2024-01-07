@@ -40,9 +40,13 @@ near-token = { version = "0.2.0", features = ["serde", "borsh"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 near-vm-logic = { version = "0.17", optional = true }
-near-primitives-core = { version = "0.17", optional = true }
-near-primitives = { version = "0.17", optional = true }
-near-crypto = { version = "0.17", optional = true }
+###near-primitives-core = { version = "0.17", optional = true }
+###near-primitives = { version = "0.17", optional = true }
+###near-crypto = { version = "0.17", optional = true }
+###near-vm-logic = { git = "https://github.com/jong-un-crypto/nearcore", branch = "master", optional = true }
+near-primitives-core = { git = "https://github.com/jong-un-crypto/nearcore", branch = "master", optional = true  }
+near-primitives = { git = "https://github.com/jong-un-crypto/nearcore", branch = "master", optional = true  }
+near-crypto = { git = "https://github.com/jong-un-crypto/nearcore", branch = "master", optional = true  }
 
 [dev-dependencies]
 rand = "0.8.4"
