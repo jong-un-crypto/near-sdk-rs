@@ -1,5 +1,5 @@
 use near_primitives::types::TrieNodesCount;
-use near_primitives_core::hash::{hash, CryptoHash};
+use near_primitives::hash::{hash, CryptoHash};
 use near_primitives_core::types::{AccountId, Balance};
 use near_vm_logic::{External, StorageGetMode, ValuePtr};
 use std::collections::HashMap;
@@ -35,6 +35,7 @@ impl SdkExternal {
     }
 }
 
+/*
 impl External for SdkExternal {
     fn storage_set(&mut self, key: &[u8], value: &[u8]) -> Result<()> {
         self.fake_trie.insert(key.to_vec(), value.to_vec());
@@ -66,7 +67,7 @@ impl External for SdkExternal {
         Ok(self.fake_trie.contains_key(key))
     }
 
-    fn generate_data_id(&mut self) -> CryptoHash {
+    fn generaet_data_id(&mut self) -> CryptoHash {
         // Generates some hash for the data ID to receive data. This hash should not be functionally
         // used in any mocked contexts.
         let data_id = hash(&self.data_count.to_le_bytes());
@@ -78,6 +79,7 @@ impl External for SdkExternal {
         TrieNodesCount { db_reads: 0, mem_reads: 0 }
     }
 
+
     fn validator_stake(&self, account_id: &AccountId) -> Result<Option<Balance>> {
         Ok(self.validators.get(account_id).cloned())
     }
@@ -85,4 +87,4 @@ impl External for SdkExternal {
     fn validator_total_stake(&self) -> Result<Balance> {
         Ok(self.validators.values().sum())
     }
-}
+}*/

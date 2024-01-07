@@ -2,7 +2,7 @@ use crate::mock::MockedBlockchain;
 use crate::test_utils::test_env::*;
 use crate::AccountId;
 use crate::{BlockHeight, EpochHeight, Gas, NearToken, PromiseResult, PublicKey, StorageUsage};
-use near_primitives_core::runtime::fees::RuntimeFeesConfig;
+use near_parameters::RuntimeFeesConfig;
 use near_vm_logic::{VMConfig, ViewConfig};
 use std::convert::TryInto;
 
