@@ -194,6 +194,7 @@ fn pub_key_conversion(key: &VmPublicKey) -> PublicKey {
     let curve_type = match key.key_type() {
         near_crypto::KeyType::ED25519 => CurveType::ED25519,
         near_crypto::KeyType::SECP256K1 => CurveType::SECP256K1,
+        near_crypto::KeyType::RSA2048 => CurveType::RSA2048,
     };
     PublicKey::from_parts(curve_type, key.key_data().to_vec()).unwrap()
 }
