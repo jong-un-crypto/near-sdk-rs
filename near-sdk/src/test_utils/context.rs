@@ -3,8 +3,10 @@ use crate::test_utils::test_env::*;
 use crate::AccountId;
 use crate::{BlockHeight, EpochHeight, Gas, NearToken, PromiseResult, PublicKey, StorageUsage};
 use near_parameters::RuntimeFeesConfig;
-use near_vm_logic::{VMConfig, ViewConfig};
+use near_primitives_core::config::ViewConfig;
+
 use std::convert::TryInto;
+use crate::VMConfig;
 
 /// Returns a pre-defined account_id from a list of 6.
 pub fn accounts(id: usize) -> AccountId {
@@ -175,8 +177,8 @@ impl VMContextBuilder {
     }
 
     pub fn is_view(&mut self, is_view: bool) -> &mut Self {
-        self.context.view_config =
-            if is_view { Some(ViewConfig { max_gas_burnt: 200000000000000 }) } else { None };
+        // self.context.view_config =
+        //     if is_view { Some(ViewConfig { max_gas_burnt: 200000000000000 }) } else { None };
         self
     }
 

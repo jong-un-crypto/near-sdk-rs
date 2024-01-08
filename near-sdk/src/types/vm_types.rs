@@ -1,7 +1,7 @@
 #[cfg(all(not(target_arch = "wasm32"), feature = "unit-testing"))]
-pub use near_vm_logic::types::{PromiseResult as VmPromiseResult, ReturnData};
+pub use near_vm_runner::logic::types::{PromiseResult as VmPromiseResult, ReturnData};
 
-//* Types from near_vm_logic
+//* Types from near_vm_runner::logic
 /// Promise index that is computed only once.
 #[derive(Debug, Eq, PartialEq, PartialOrd, Ord, Hash, Copy, Clone)]
 pub struct PromiseIndex(pub(crate) u64);

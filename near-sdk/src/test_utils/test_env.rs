@@ -1,5 +1,6 @@
 use crate::test_utils::VMContextBuilder;
-use crate::{testing_env, AccountId, VMConfig};
+use crate::{testing_env, AccountId};
+use crate::RuntimeConfig as VMConfig;
 
 pub fn alice() -> AccountId {
     "alice.near".parse().unwrap()

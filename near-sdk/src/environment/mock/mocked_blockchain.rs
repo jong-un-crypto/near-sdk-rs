@@ -1,5 +1,5 @@
 use super::{Receipt, SdkExternal};
-// TODO replace with near_vm_logic::mocks::mock_memory::MockedMemory after updating version from 0.17
+// TODO replace with near_vm_runner::logic::mocks::mock_memory::MockedMemory after updating version from 0.17
 use crate::mock::mocked_memory::MockedMemory;
 use crate::mock::VmAction;
 use crate::test_utils::VMContextBuilder;
@@ -7,12 +7,15 @@ use crate::types::{NearToken, PromiseResult};
 use crate::{CurveType, Gas};
 use crate::{PublicKey, VMContext};
 use near_crypto::PublicKey as VmPublicKey;
-use near_parameters::RuntimeFeesConfig;
 use near_primitives::transaction::Action as PrimitivesAction;
-use near_vm_logic::types::PromiseResult as VmPromiseResult;
-use near_vm_logic::{External, MemoryLike, VMConfig, VMLogic};
+use near_vm_runner::logic::types::PromiseResult as VmPromiseResult;
+use near_vm_runner::logic::{External, MemoryLike, VMLogic};
+
 use std::cell::RefCell;
 use std::collections::HashMap;
+use near_parameters::RuntimeFeesConfig;
+pub use near_parameters::config::RuntimeConfig;
+pub use near_parameters::vm::Config as VMConfig;
 
 /// Mocked blockchain that can be used in the tests for the smart contracts.
 /// It implements `BlockchainInterface` by redirecting calls to `VMLogic`. It unwraps errors of
@@ -30,7 +33,7 @@ impl Default for MockedBlockchain {
     fn default() -> Self {
         MockedBlockchain::new(
             VMContextBuilder::new().build(),
-            VMConfig::test(),
+            RuntimeConfig::test(),
             RuntimeFeesConfig::test(),
             vec![],
             Default::default(),
@@ -52,41 +55,38 @@ struct LogicFixture {
 impl MockedBlockchain {
     pub fn new(
         context: VMContext,
-        config: VMConfig,
+        config: RuntimeConfig,
         fees_config: RuntimeFeesConfig,
         promise_results: Vec<PromiseResult>,
         storage: HashMap<Vec<u8>, Vec<u8>>,
         validators: HashMap<String, NearToken>,
         memory_opt: Option<Box<dyn MemoryLike>>,
     ) -> Self {
-        panic!("TODO: ");
+        let mut ext = Box::new(SdkExternal::new());
+        let context = sdk_context_to_vm_context(context);
+        ext.fake_trie = storage;
+        ext.validators =
+            validators.into_iter().map(|(k, v)| (k.parse().unwrap(), v.as_yoctonear())).collect();
+        let memory = memory_opt.unwrap_or_else(|| Box::<MockedMemory>::default());
+        let promise_results = Box::new(promise_results.into_iter().map(From::from).collect());
+        let config = Box::new(config.wasm_config);
+        let fees_config = Box::new(fees_config);
 
-        // let mut ext = Box::new(SdkExternal::new());
-        // let context = sdk_context_to_vm_context(context);
-        // ext.fake_trie = storage;
-        // ext.validators =
-        //     validators.into_iter().map(|(k, v)| (k.parse().unwrap(), v.as_yoctonear())).collect();
-        // let memory = memory_opt.unwrap_or_else(|| Box::<MockedMemory>::default());
-        // let promise_results = Box::new(promise_results.into_iter().map(From::from).collect());
-        // let config = Box::new(config);
-        // let fees_config = Box::new(fees_config);
+        let mut logic_fixture = LogicFixture { ext, memory, promise_results, config, fees_config };
 
-        // let mut logic_fixture = LogicFixture { ext, memory, promise_results, config, fees_config };
+        let logic = unsafe {
+            VMLogic::new(
+                &mut *(logic_fixture.ext.as_mut() as *mut dyn External),
+                context,
+                &*(logic_fixture.config.as_mut() as *const VMConfig),
+                &*(logic_fixture.fees_config.as_mut() as *const RuntimeFeesConfig),
+                &*(logic_fixture.promise_results.as_ref().as_slice() as *const [VmPromiseResult]),
+                &mut *(logic_fixture.memory.as_mut() as *mut dyn MemoryLike),
+            )
+        };
 
-        // let logic = unsafe {
-        //     VMLogic::new_with_protocol_version(
-        //         &mut *(logic_fixture.ext.as_mut() as *mut dyn External),
-        //         context,
-        //         &*(logic_fixture.config.as_mut() as *const VMConfig),
-        //         &*(logic_fixture.fees_config.as_mut() as *const RuntimeFeesConfig),
-        //         &*(logic_fixture.promise_results.as_ref().as_slice() as *const [VmPromiseResult]),
-        //         &mut *(logic_fixture.memory.as_mut() as *mut dyn MemoryLike),
-        //         u32::MAX,
-        //     )
-        // };
-
-        // let logic = RefCell::new(logic);
-        // Self { logic, logic_fixture }
+        let logic = RefCell::new(logic);
+        Self { logic, logic_fixture }
     }
 
     pub fn take_storage(&mut self) -> HashMap<Vec<u8>, Vec<u8>> {
@@ -95,9 +95,9 @@ impl MockedBlockchain {
 
     /// Returns metadata about the receipts created
     pub fn created_receipts(&self) -> Vec<Receipt> {
-        panic!("Unimplemented")
+        todo!()
         /*
-        self.logic
+        self.logic.
             .borrow()
             .action_receipts()
             .iter()
@@ -105,7 +105,8 @@ impl MockedBlockchain {
                 let actions = receipt.actions.iter().map(action_to_sdk_action).collect();
                 Receipt { receiver_id: receiver.as_str().parse().unwrap(), actions }
             })
-            .collect()*/
+            .collect()
+        */
     }
 
     pub fn gas(&mut self, gas_amount: u32) {
@@ -118,8 +119,8 @@ impl MockedBlockchain {
     }
 }
 
-fn sdk_context_to_vm_context(context: VMContext) -> near_vm_logic::VMContext {
-    near_vm_logic::VMContext {
+fn sdk_context_to_vm_context(context: VMContext) -> near_vm_runner::logic::VMContext {
+    near_vm_runner::logic::VMContext {
         current_account_id: context.current_account_id.as_str().parse().unwrap(),
         signer_account_id: context.signer_account_id.as_str().parse().unwrap(),
         signer_account_pk: context.signer_account_pk.into_bytes(),
@@ -181,8 +182,7 @@ fn action_to_sdk_action(action: &PrimitivesAction) -> VmAction {
             VmAction::DeleteKey { public_key: pub_key_conversion(&k.public_key) }
         }
         PrimitivesAction::DeleteAccount(a) => {
-            //VmAction::DeleteAccount { beneficiary_id: a.beneficiary_id.parse().unwrap() }
-            panic!("Unimplemented")
+            VmAction::DeleteAccount { beneficiary_id: a.beneficiary_id.clone() }
         }
         PrimitivesAction::Delegate(_d) => {
             panic!("Unimplemented")
@@ -201,7 +201,7 @@ fn pub_key_conversion(key: &VmPublicKey) -> PublicKey {
 
 #[cfg(not(target_arch = "wasm32"))]
 mod mock_chain {
-    use near_vm_logic::{VMLogic, VMLogicError};
+    use near_vm_runner::logic::{VMLogic, VMLogicError};
 
     fn with_mock_interface<F, R>(f: F) -> R
     where
